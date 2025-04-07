@@ -1,0 +1,95 @@
+import random
+import re
+from collections import defaultdict
+
+class MarkovChainTextGenerator:
+    def __init__(self):
+        # Dictionary to store word transitions: {word: {next_word: count}}
+        self.chain = defaultdict(lambda: defaultdict(int))
+    
+    def train(self, text):
+        """Train the Markov chain with input text."""
+        # Clean and split text into words
+        words = re.findall(r'\w+|[.!?]', text.lower())
+        
+        # Build the chain
+        for i in range(len(words) - 1):
+            current_word = words[i]
+            next_word = words[i + 1]
+            self.chain[current_word][next_word] += 1
+    
+    def generate(self, length=20, seed=None):
+        """Generate text of specified length starting with an optional seed word."""
+        if not self.chain:
+            raise ValueError("Markov chain not trained. Call train() with text first.")
+        
+        # Choose starting word
+        if seed and seed.lower() in self.chain:
+            current_word = seed.lower()
+        else:
+            current_word = random.choice(list(self.chain.keys()))
+        
+        output = [current_word]
+        
+        # Generate subsequent words
+        for _ in range(length - 1):
+            next_words = self.chain[current_word]
+            if not next_words:
+                break  # End if no transitions available
+            
+            # Weighted random choice based on transition counts
+            total_weight = sum(next_words.values())
+            rand_val = random.randint(1, total_weight)
+            cumulative = 0
+            
+            for word, count in next_words.items():
+                cumulative += count
+                if rand_val <= cumulative:
+                    current_word = word
+                    output.append(word)
+                    break
+        
+        # Join words, adding spaces except before punctuation
+        result = ""
+        for i, word in enumerate(output):
+            if i > 0 and word in '.!?':
+                result += word
+            else:
+                result += " " + word if i > 0 else word
+        return result
+
+def main():
+    generator = MarkovChainTextGenerator()
+    
+    # Sample text for training (replace with your own or load from file)
+    sample_text = """
+    The quick brown fox jumps over the lazy dog. The dog sleeps all day.
+    Foxes are clever and quick. Dogs are loyal but lazy sometimes.
+    """
+    
+    print("Training Markov chain with sample text...")
+    generator.train(sample_text)
+    
+    while True:
+        try:
+            length = int(input("\nEnter desired text length (words, 5-50, or 0 to quit): "))
+            if length == 0:
+                print("Goodbye!")
+                break
+            if length < 5 or length > 50:
+                print("Please enter a length between 5 and 50.")
+                continue
+            
+            seed = input("Enter a starting word (optional, press Enter to skip): ").strip()
+            seed = seed if seed else None
+            
+            generated = generator.generate(length, seed)
+            print(f"Generated Text: {generated}")
+            
+        except ValueError as e:
+            print(f"Error: {e}")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+
+if __name__ == "__main__":
+    main()
