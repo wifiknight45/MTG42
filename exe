@@ -35,7 +35,7 @@ class MarkovChainTextGenerator:
         for _ in range(length - 1):
             next_words = self.chain[current_word]
             if not next_words:
-                break  # End if no transitions available
+                break # End if no transitions available
             
             # Weighted random choice based on transition counts
             total_weight = sum(next_words.values())
@@ -58,26 +58,51 @@ class MarkovChainTextGenerator:
                 result += " " + word if i > 0 else word
         return result
 
+def load_large_word_list(file_path):
+    """Load a large word list or dictionary from a file."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    except FileNotFoundError:
+        print(f"Error: File {file_path} not found.")
+        return ""
+
+def save_output_to_file(content, file_path="output.txt"):
+    """Save the generated output to a text file."""
+    try:
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(content)
+        print(f"Output saved to {file_path}")
+    except Exception as e:
+        print(f"Error saving file: {e}")
+
 def main():
     generator = MarkovChainTextGenerator()
     
-    # Sample text for training (replace with your own or load from file)
-    sample_text = """
-    The quick brown fox jumps over the lazy dog. The dog sleeps all day.
-    Foxes are clever and quick. Dogs are loyal but lazy sometimes.
-    """
+    # Load a large word list or dictionary (optional)
+    word_list_path = "large_word_list.txt" # Replace with your file path
+    large_text = load_large_word_list(word_list_path)
     
-    print("Training Markov chain with sample text...")
-    generator.train(sample_text)
+    if large_text:
+        print("Training Markov chain with a large word list...")
+        generator.train(large_text)
+    else:
+        # Fallback to default sample text
+        sample_text = """
+        The quick brown fox jumps over the lazy dog. The dog sleeps all day.
+        Foxes are clever and quick. Dogs are loyal but lazy sometimes.
+        """
+        print("Training Markov chain with sample text...")
+        generator.train(sample_text)
     
     while True:
         try:
-            length = int(input("\nEnter desired text length (words, 5-50, or 0 to quit): "))
+            length = int(input("\nEnter desired text length (words, 5-100, or 0 to quit): "))
             if length == 0:
                 print("Goodbye!")
                 break
-            if length < 5 or length > 50:
-                print("Please enter a length between 5 and 50.")
+            if length < 5 or length > 100:
+                print("Please enter a length between 5 and 100.")
                 continue
             
             seed = input("Enter a starting word (optional, press Enter to skip): ").strip()
@@ -85,6 +110,11 @@ def main():
             
             generated = generator.generate(length, seed)
             print(f"Generated Text: {generated}")
+            
+            # Option to save output
+            save_option = input("Save this output to a file? (yes/no): ").strip().lower()
+            if save_option in ['yes', 'y']:
+                save_output_to_file(generated)
             
         except ValueError as e:
             print(f"Error: {e}")
